@@ -47,7 +47,7 @@ The Reimbursement Management System is a web application built with Flask and Op
 
 2. Locate the following line:
    ```python
-   api_key = "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"
+   api_key = "API_KEY"
    ```
 
 3. Replace the API key with your own OpenAI API key. It's recommended to use an environment variable for security:
