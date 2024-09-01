@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Reimbursement Claims</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="/static/js/admin.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+
+
+</head>
+<body class="bg-gray-100 min-h-screen" x-data="reimbursementSystem()">
+<main class="pt-20">
+    <!-- Login Modal -->
+    <div x-show="!isLoggedIn" class="fixed inset-0 bg-gray-800 bg-opacity-75 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+        <div class="card bg-white p-8 w-96">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800">Login</h2>
+            <form @submit.prevent="login">
+                <div class="mb-4">
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" id="email" x-model="loginForm.email" required class="form-input">
+                </div>
+                <div class="mb-6">
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="password" x-model="loginForm.password" required class="form-input">
+                </div>
+                <button type="submit" class="btn-primary w-full">
+                    Login
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Content (Only visible when logged in) -->
+    <div x-show="isLoggedIn" class="flex flex-col h-screen">
+        <!-- Header -->
+        
+
+        <header class="bg-white shadow-md fixed top-0 left-0 w-full z-50">
+            <div class="container mx-auto py-4 px-6 flex items-center justify-between">
+                <div class="flex items-center">
+                    <img src="https://omteccorp.in/wp-content/uploads/2023/04/big-logo-without-BG.png" alt="TechCorp Logo" class="h-10 mr-3">
+                    <h1 class="text-2xl font-bold text-gray-800">OM TechCorp</h1>
+                </div>
+                <h2 class="text-xl font-semibold text-gray-700">Reimbursement Management System</h2>
+                <div class="relative">
+                    <button @click="toggleEmployeeDetails" class="flex items-center text-blue-600 hover:text-blue-800">
+                        <img :src="employee.profilePicture" alt="Profile" class="w-8 h-8 rounded-full mr-2">
+                        <span x-text="employee.name"></span>
+                    </button>
+                    <div x-show="showEmployeeDetails" @click.away="showEmployeeDetails = false" class="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-xl p-4 z-50">
+                        <div class="flex items-center mb-4">
+                            <img :src="employee.profilePicture" alt="Profile" class="w-16 h-16 rounded-full mr-4">
+                            <div>
+                                <h3 class="font-semibold text-lg" x-text="employee.name"></h3>
+                                <p class="text-sm text-gray-600" x-text="employee.designation"></p>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <p class="flex items-center text-sm">
+                                <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                </svg>
+                                <span x-text="employee.email"></span>
+                            </p>
+                            <p class="flex items-center text-sm">
+                                <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path>
+                                </svg>
+                                <span x-text="employee.employeeId"></span>
+                            </p>
+                            <button @click="logout" class="btn-danger w-full">
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <div class="flex-grow flex overflow-hidden">
+            <!-- Claims List (20% width) -->
+            <div class="w-1/5 bg-white shadow-md overflow-y-auto scrollbar-thin">
+                <div class="p-4">
+                    <!-- Status bar for claims list -->
+                    <div x-show="isLoading" class="bg-indigo-100 border-l-4 border-indigo-500 text-indigo-700 p-4 mb-4 rounded" role="alert">
+                        <p class="font-bold">Fetching claim information</p>
+                        <p>Please wait while we retrieve the latest claims data.</p>
+                    </div>
+                    
+                    <!-- Claims list content -->
+                    <div x-show="!isLoading">
+                        <h2 class="text-xl font-semibold mb-4 text-gray-800">Pending Claims</h2>
+                        <ul class="mb-6 space-y-2">
+                            <template x-for="claim in pendingClaims" :key="claim.id">
+                                <li>
+                                    <button @click="selectClaim(claim.id, 'pending')" 
+                                            class="w-full text-left p-2 rounded-md transition-colors duration-200 ease-in-out"
+                                            :class="{'bg-indigo-100 text-indigo-800': selectedClaimId === claim.id, 'hover:bg-gray-100': selectedClaimId !== claim.id}">
+                                        <span x-text="claim.id" class="font-medium"></span> - 
+                                        <span x-text="claim.employee.name"></span>
+                                    </button>
+                                </li>
+                            </template>
+                        </ul>
+
+                        <h2 class="text-xl font-semibold mb-4 text-gray-800">Processed Claims</h2>
+                        <ul class="space-y-2">
+                            <template x-for="claim in processedClaims" :key="claim.id">
+                                <li>
+                                    <button @click="selectClaim(claim.id, 'processed')" 
+                                            class="w-full text-left p-2 rounded-md transition-colors duration-200 ease-in-out"
+                                            :class="{'bg-green-100 text-green-800': selectedClaimId === claim.id, 'hover:bg-gray-100': selectedClaimId !== claim.id}">
+                                        <span x-text="claim.id" class="font-medium"></span> - 
+                                        <span x-text="claim.employee.name"></span>
+                                    </button>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Claim Details (80% width) -->
+            <div class="w-4/5 p-8 overflow-y-auto scrollbar-thin">
+                <!-- Status bar for claim details -->
+                <div x-show="isClaimLoading" class="bg-indigo-100 border-l-4 border-indigo-500 text-indigo-700 p-4 mb-4 rounded" role="alert">
+                    <p class="font-bold">Fetching claim information</p>
+                    <p>Please wait while we retrieve the details for this claim.</p>
+                </div>
+                
+                <!-- Claim details content -->
+                <template x-if="selectedClaim && !isClaimLoading">
+                    <div class="max-w-full space-y-6">
+                        <h2 class="text-2xl font-semibold mb-4 text-gray-800">Claim Details</h2>
+                        <div class="card bg-white p-6">
+                            <h3 class="text-xl font-semibold mb-2 text-gray-800" x-text="'Employee: ' + selectedClaim.employee.name"></h3>
+                            <p class="mb-1 text-gray-600" x-text="'Email: ' + selectedClaim.employee.email"></p>
+                            <p class="mb-1 text-gray-600" x-text="'Designation: ' + selectedClaim.employee.designation"></p>
+                            <p class="mb-4 text-gray-600" x-text="'Employee ID: ' + selectedClaim.employee.employee_id"></p>
+                            
+                            <h4 class="text-lg font-semibold mb-4 text-gray-800">Invoices and Claims:</h4>
+                            <template x-for="(invoice, index) in selectedClaim.invoices" :key="invoice.vendor">
+                                <div class="mb-6 bg-gray-50 rounded-md overflow-hidden">
+                                    <div class="grid grid-cols-3 gap-4">
+                                        <div class="card bg-white p-4">
+                                            <h5 class="font-semibold mb-2 text-indigo-700">Invoice Details:</h5>
+                                            <p class="font-medium" x-text="'Vendor: ' + invoice.vendor"></p>
+                                            <p class="text-gray-600" x-text="'Date: ' + invoice.date"></p>
+                                            
+                                            <h6 class="font-semibold mt-2 mb-1 text-gray-700">Items:</h6>
+                                            <ul class="list-disc list-inside text-gray-600">
+                                                <template x-for="item in invoice.items" :key="item.name">
+                                                    <li>
+                                                        <span x-text="item.name + ' - ' + invoice.currency + item.amount"></span>
+                                                    </li>
+                                                </template>
+                                            </ul>
+                                            <p class="mt-2 text-gray-600" x-text="'Subtotal: ' + invoice.currency + invoice.parsedData.subtotal"></p>
+                                            <p class="text-gray-600" x-text="'Service Charge: ' + invoice.currency + invoice.parsedData.service_charge"></p>
+                                            <p class="text-gray-600" x-text="'GST: ' + invoice.currency + invoice.parsedData.gst"></p>
+                                            <p class="text-gray-600" x-text="'VAT: ' + invoice.currency + invoice.parsedData.vat_on_liquor"></p>
+                                            <p class="text-gray-600" x-text="'Gross Amount: ' + invoice.currency + invoice.parsedData.gross_amount"></p>
+
+                                        </div>
+                                        
+                                        <div class="card bg-white p-4">
+                                            <h5 class="font-semibold mb-2 text-indigo-700">Claim Details:</h5>
+                                            <template x-if="selectedClaim.claims && selectedClaim.claims[index]">
+                                                <div>
+                                                    <p class="text-gray-600" x-text="'Vendor: ' + selectedClaim.claims[index].vendor"></p>
+                                                    <p class="text-gray-600" x-text="'Date: ' + selectedClaim.claims[index].date"></p>
+                                                    <h6 class="font-semibold mt-2 mb-1 text-gray-700">Items:</h6>
+                                                    <ul class="list-disc list-inside text-gray-600">
+                                                        <template x-for="item in selectedClaim.claims[index].items" :key="item.name">
+                                                            <li>
+                                                                <span x-text="item.name + ' - ' + selectedClaim.currency + item.amount"></span>
+                                                            </li>
+                                                        </template>
+                                                    </ul>
+                                                    <p class="mt-2 text-gray-600" x-text="'Subtotal: ' + selectedClaim.currency + selectedClaim.claims[index].subtotal"></p>
+                                                    <p class="text-gray-600" x-text="'Service Charge: ' + selectedClaim.currency + selectedClaim.claims[index].service_charge"></p>
+                                                    <p class="text-gray-600" x-text="'GST: ' + selectedClaim.currency + selectedClaim.claims[index].gst"></p>
+                                                    <p class="text-gray-600" x-text="'VAT: ' + selectedClaim.currency + selectedClaim.claims[index].vat"></p>
+                                                    <p class="text-gray-600" x-text="'Gross Amount: ' + selectedClaim.currency + selectedClaim.claims[index].gross_amount"></p>
+                                                </div>
+                                            </template>
+                                        </div>
+                                        
+                                        <div class="card bg-white p-4">
+                                            <h5 class="font-semibold mb-2 text-indigo-700">Invoice Image:</h5>
+                                            <img :src="'data:image/png;base64,' + invoice.base64Image" 
+                                                 alt="Invoice Image" 
+                                                 class="w-full h-auto rounded-md shadow-sm cursor-pointer transition-transform duration-300 hover:scale-105"
+                                                 @click="openImagePopup(invoice.base64Image)">
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                            
+                            <p class="text-xl font-semibold mt-4 text-indigo-700" x-text="'Total Amount Claimed: ' + selectedClaim.currency + selectedClaim.totalReimbursement"></p>
+                        </div>
+
+                        <!-- Analysis Details Card -->
+                        <div class="card bg-white p-6">
+                            <h3 class="text-xl font-semibold mb-4 text-indigo-700">Reimbursement Analysis</h3>
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <p class="font-semibold text-gray-700">Total Eligibility:</p>
+                                    <p class="text-gray-600" x-text="selectedClaim.analysis.currency + selectedClaim.analysis.total_eligibility"></p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-700">Eligible Reimbursement:</p>
+                                    <p class="text-gray-600" x-text="selectedClaim.analysis.currency + selectedClaim.analysis.eligible_reimbursement"></p>
+                                </div>
+                            </div>
+                            <div class="mb-4">
+                                <p class="font-semibold text-gray-700">Justification:</p>
+                                <ul class="list-disc list-inside text-gray-600">
+                                    <template x-for="(item, index) in selectedClaim.analysis.justification" :key="index">
+                                        <li x-text="item"></li>
+                                    </template>
+                                </ul>
+                            </div>
+                            <div x-show="Object.keys(selectedClaim.analysis.deductions).length > 0">
+                                <p class="font-semibold text-gray-700">Deductions:</p>
+                                <ul class="list-disc list-inside text-gray-600">
+                                    <template x-for="(value, key) in selectedClaim.analysis.deductions" :key="key">
+                                        <li x-text="key + ': ' + selectedClaim.currency + value"></li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Approval Form or Approval Details -->
+                        <div class="card bg-white p-6">
+                            <template x-if="selectedClaim.status === 'not-approved'">
+                                <div>
+                                    <h3 class="text-xl font-semibold mb-4 text-indigo-700">Approve Reimbursement</h3>
+                                    <form @submit.prevent="approveClaim">
+                                        <div class="mb-4">
+                                            <label for="eligibleReimbursement" class="block text-sm font-medium text-gray-700 mb-1">Eligible Reimbursement</label>
+                                            <input type="number" id="eligibleReimbursement" name="eligibleReimbursement" 
+                                                   x-model="approvalForm.eligibleReimbursement" 
+                                                   class="form-input"
+                                                   step="0.01" required>
+                                        </div>
+                                        <div class="mb-4">
+                                            <label for="comments" class="block text-sm font-medium text-gray-700 mb-1">Comments</label>
+                                            <textarea id="comments" name="comments" 
+                                                      x-model="approvalForm.comments" 
+                                                      class="form-textarea"
+                                                      rows="3"></textarea>
+                                        </div>
+                                        <button type="submit" class="btn-primary">
+                                            Approve Claim
+                                        </button>
+                                    </form>
+                                </div>
+                            </template>
+                            <template x-if="selectedClaim.status === 'approved'">
+                                <div>
+                                    <h3 class="text-xl font-semibold mb-4 text-indigo-700">Approval Details</h3>
+                                    <p class="mb-2"><span class="font-semibold text-gray-700">Approved Amount:</span> <span class="text-gray-600" x-text="selectedClaim.currency + selectedClaim.approved.eligible_reimbursement"></span></p>
+                                    <p class="mb-2"><span class="font-semibold text-gray-700">Approval Comments:</span> <span class="text-gray-600" x-text="selectedClaim.approved.comments"></span></p>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <footer class="bg-white shadow-md fixed bottom-0 left-0 w-full z-50">
+            <div class="container mx-auto py-4 px-6 flex items-center justify-between">
+                <p class="text-gray-600">&copy; 2024 OM TechCorp. All rights reserved.</p>
+                <p class="text-gray-600">Developed with Azure OpenAI with 🩷</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Image Popup -->
+    <div x-show="showImagePopup" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" @click.self="closeImagePopup">
+        <div class="relative bg-white p-2 rounded-lg max-w-3xl max-h-full overflow-auto">
+            <button @click="closeImagePopup" class="absolute top-2 right-2 text-gray-600 hover:text-gray-800 transition-colors duration-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+            <img :src="'data:image/png;base64,' + popupImage" alt="Invoice Image" class="max-w-full max-h-[80vh] mx-auto">
+        </div>
+    </div>
+
+    <script src="/static/js/admin.js"></script>
+</main>
+</body>
+</html>

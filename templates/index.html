@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reimbursement Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="bg-gradient-to-r from-blue-100 to-purple-100 min-h-screen" x-data="reimbursementSystem()">
+    <header class="bg-white shadow-md fixed top-0 left-0 w-full z-50">
+        <div class="container mx-auto py-4 px-6 flex items-center justify-between">
+            <div class="flex items-center">
+                <img src="https://omteccorp.in/wp-content/uploads/2023/04/big-logo-without-BG.png" alt="TechCorp Logo" class="h-10 mr-3">
+                <h1 class="text-2xl font-bold text-gray-800">OM TechCorp</h1>
+            </div>
+            <h2 class="text-xl font-semibold text-gray-700">Reimbursement Management System</h2>
+            <div class="relative">
+                <button @click="toggleEmployeeDetails" class="flex items-center text-blue-600 hover:text-blue-800">
+                    <img :src="employee.profilePicture" alt="Profile" class="w-8 h-8 rounded-full mr-2">
+                    <span x-text="employee.name"></span>
+                </button>
+                <div x-show="showEmployeeDetails" @click.away="showEmployeeDetails = false" class="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-xl p-4 z-50">
+                    <div class="flex items-center mb-4">
+                        <img :src="employee.profilePicture" alt="Profile" class="w-16 h-16 rounded-full mr-4">
+                        <div>
+                            <h3 class="font-semibold text-lg" x-text="employee.name"></h3>
+                            <p class="text-sm text-gray-600" x-text="employee.designation"></p>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <p class="flex items-center text-sm">
+                            <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                            </svg>
+                            <span x-text="employee.email"></span>
+                        </p>
+                        <p class="flex items-center text-sm">
+                            <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path>
+                            </svg>
+                            <span x-text="employee.employeeId"></span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    <div class="pt-20"> <!-- Added padding to prevent content from being hidden under the fixed header -->
+        <!-- Your page content goes here -->
+    
+    
+
+    <div class="container mx-auto py-12 px-4">
+        <div class="max-w-9xl mx-auto">
+            <div class="flex justify-end mb-4">
+                <a @click.prevent="addInvoice" href="#" class="text-blue-600 hover:underline cursor-pointer">
+                    Add New Invoice
+                </a>
+            </div>
+
+            <template x-for="(invoice, index) in invoices" :key="index">
+                <div class="mb-8 card">
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-semibold" x-text="`Invoice ${index + 1}`"></h3>
+                            <button @click="removeInvoice(index)" class="text-red-500 hover:text-red-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="flex flex-col lg:flex-row gap-8">
+                            <!-- Left Section: Form -->
+                            <div class="w-full lg:w-1/3 scrollable-section">
+                                <div class="mb-6">
+                                    <label :for="'vendor-' + index" class="block text-gray-700 font-semibold mb-2">Vendor</label>
+                                    <input type="text" :id="'vendor-' + index" x-model="invoice.vendor" required 
+                                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                
+                                <div class="mb-6">
+                                    <label :for="'date-' + index" class="block text-gray-700 font-semibold mb-2">Date</label>
+                                    <input type="date" :id="'date-' + index" x-model="invoice.date" required 
+                                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div class="mb-6">
+                                    <label class="block text-gray-700 font-semibold mb-2">Items</label>
+                                    <template x-for="(item, itemIndex) in invoice.items" :key="itemIndex">
+                                        <div class="flex flex-wrap -mx-2 mb-4 items-center">
+                                            <div class="px-2 w-full sm:w-1/4 mb-2 sm:mb-0">
+                                                <input type="text" x-model="item.name" placeholder="Name" required 
+                                                       class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            </div>
+                                            <div class="px-2 w-full sm:w-1/4 mb-2 sm:mb-0">
+                                                <input type="number" x-model="item.quantity" placeholder="Quantity" required 
+                                                       @input="calculateAmount(index, itemIndex)"
+                                                       class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            </div>
+                                            <div class="px-2 w-full sm:w-1/4 mb-2 sm:mb-0">
+                                                <input type="number" x-model="item.rate" placeholder="Rate" step="0.01" required 
+                                                       @input="calculateAmount(index, itemIndex)"
+                                                       class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            </div>
+                                            <div class="px-2 w-full sm:w-1/4">
+                                                <input type="number" x-model="item.amount" placeholder="Amount" step="0.01" required 
+                                                       class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" readonly>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <div class="flex justify-between">
+                                        <button type="button" @click="addItem(index)" class="text-blue-600 hover:underline cursor-pointer">
+                                            Add Item
+                                        </button>
+                                        <button type="button" @click="removeItem(index)" class="text-red-600 hover:underline cursor-pointer"
+                                                x-show="invoice.items.length > 1">
+                                            Remove Last Item
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="mb-6 flex flex-wrap -mx-2">
+                                    <div class="px-2 w-full sm:w-1/5 mb-2 sm:mb-0">
+                                        <label :for="'subtotal-' + index" class="form-label">Item Subtotal</label>
+                                        <input type="number" :id="'subtotal-' + index" x-model="invoice.subtotal" step="0.01" required
+                                               class="form-input" readonly>
+                                    </div>
+                                    <div class="px-2 w-full sm:w-1/5 mb-2 sm:mb-0">
+                                        <label :for="'service-charge-' + index" class="form-label">Service Charge</label>
+                                        <input type="number" :id="'service-charge-' + index" x-model="invoice.service_charge" step="0.01" required
+                                               class="form-input">
+                                    </div>
+                                    <div class="px-2 w-full sm:w-1/5 mb-2 sm:mb-0">
+                                        <label :for="'gst-' + index" class="form-label">Taxes : GST</label>
+                                        <input type="number" :id="'gst-' + index" x-model="invoice.gst" step="0.01" required
+                                               class="form-input">
+                                    </div>
+                                    <div class="px-2 w-full sm:w-1/5 mb-2 sm:mb-0">
+                                        <label :for="'vat-' + index" class="form-label">Taxes : VAT</label>
+                                        <input type="number" :id="'vat-' + index" x-model="invoice.vat" step="0.01" required
+                                               class="form-input">
+                                    </div>
+                                    <div class="px-2 w-full sm:w-1/5">
+                                        <label :for="'gross-amount-' + index" class="form-label">Total Amount</label>
+                                        <input type="number" :id="'gross-amount-' + index" x-model="invoice.gross_amount" step="0.01" required
+                                               class="form-input" >
+                                    </div>
+                                </div>
+                                <div class="mb-6">
+                                    <label :for="'invoice-' + index" class="block text-gray-700 font-semibold mb-2">Invoice (PDF or Image)</label>
+                                    <div class="relative">
+                                        <input type="file" :id="'invoice-' + index" @change="handleFileUpload($event, index)" accept=".pdf,.jpg,.jpeg,.png" 
+                                               class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                                        <div class="flex items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 transition duration-300">
+                                            <svg class="w-6 h-6 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                            </svg>
+                                            <span class="text-gray-500">Choose a file or drag it here</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right Section: Uploaded Invoice -->
+                            <div class="w-full lg:w-1/3 scrollable-section" x-show="invoice.filePreview">
+                                <h4 class="text-lg font-semibold mb-4">Uploaded Invoice</h4>
+                                <div x-html="invoice.filePreview"></div>
+                            </div>
+
+                            <!-- Middle Section: Invoice Analysis -->
+                            <div class="w-full lg:w-1/3 scrollable-section" x-show="invoice.parsedData">
+                                <h4 class="text-lg font-semibold mb-4">Parsed Invoice Data</h4>
+                                <div x-html="renderParsedData(invoice.parsedData)"></div>
+                            </div>
+                        </div>
+                        <div class="flex justify-start space-x-4 text-sm text-gray-600 mt-4">
+                            <button @click="prefillSampleData(index)" class="hover:text-blue-500">Prefill Sample Data</button>
+                            <button @click="clearInvoice(index)" class="hover:text-red-500">Clear Invoice</button>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Summary Section -->
+            <div class="mb-8 card">
+                <div class="p-6">
+                    <h3 class="text-xl font-semibold mb-4">Reimbursement Claim Summary</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <template x-for="(invoice, index) in invoices" :key="index">
+                            <div class="bg-white p-4 rounded-lg shadow">
+                                <h4 class="font-semibold mb-2" x-text="`Invoice ${index + 1}`"></h4>
+                                <ul class="list-disc list-inside text-sm">
+                                    <li><span class="font-medium">Vendor:</span> <span x-text="invoice.vendor"></span></li>
+                                    <li><span class="font-medium">Date:</span> <span x-text="invoice.date"></span></li>
+                                    <li><span class="font-medium">Total Amount:</span> <span x-text="`${invoice.currency} ${invoice.gross_amount.toFixed(2)}`"></span></li>
+                                    <li><span class="font-medium">Amount in INR:</span> <span x-text="formatCurrency(convertToINR(invoice.gross_amount, invoice.currency))"></span></li>
+                                </ul>
+                            </div>
+                        </template>
+                    </div>
+                    <div class="mt-4 text-right">
+                        <p class="text-xl font-semibold">Total Reimbursement Claimed: <span x-text="formatCurrency(calculateTotalReimbursement())"></span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-start mt-4">
+                <button @click="submitReimbursement" class="btn btn-primary">
+                    Submit Reimbursement Claim
+                </button>
+            </div>
+        </div>
+    </div>
+    <div x-show="showReimbursementPopup" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" id="reimbursement-popup">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Reimbursement Submitted</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500">
+                        Your reimbursement claim has been submitted successfully.
+                    </p>
+                    <p class="text-sm font-semibold mt-2">
+                        Reimbursement ID: <span x-text="reimbursementId"></span>
+                    </p>
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button id="ok-btn" @click="closeReimbursementPopup" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                        OK
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+<footer class="bg-white shadow-md fixed bottom-0 left-0 w-full z-50">
+    <div class="container mx-auto py-4 px-6 flex items-center justify-between">
+        <p class="text-gray-600">&copy; 2024 OM TechCorp. All rights reserved.</p>
+        <p class="text-gray-600">Developed with Azure OpenAI with 🩷</p>
+        </div>
+</footer>
+</html>
